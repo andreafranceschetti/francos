@@ -1,0 +1,9 @@
+
+namespace francos {
+
+
+class Thread {
+
+};
+
+}
