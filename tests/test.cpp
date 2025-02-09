@@ -8,9 +8,33 @@
 #include <chrono>
 #include <queue>
 #include <thread>
+#include <atomic>
+#include <deque>
+#include <mutex>
+#include <cstdarg>
+#include <cstdio>
 
 using namespace std::chrono_literals;
 using Clock = std::chrono::high_resolution_clock;
+
+
+std::mutex mtx;
+
+static inline void log(const char* fmt, ...) {
+    char buffer[256];  // Fixed-size buffer (can be dynamically allocated for larger logs)
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(buffer, sizeof(buffer), fmt, args);
+    va_end(args);
+
+    std::lock_guard<std::mutex> lock(mtx);
+    std::cout << buffer << std::endl;
+
+
+}
+
+#define LOG_INFO(...) log(__VA_ARGS__)
+
 
 class Thread;
 
@@ -19,8 +43,35 @@ class SubscriberBase {
 public:
     SubscriberBase(Thread * thread) : thread(thread){}
     virtual ~SubscriberBase() = default;
-    virtual void execute(Message const& msg) = 0;
+    virtual void execute() = 0;
+    virtual void push(Message const& msg) = 0;
     Thread * thread;
+};
+
+template<typename Message>
+class RingBuffer {
+public:
+
+    struct Slot{
+        Message msg;
+        std::atomic<uint32_t> ref_counter;
+    };
+
+    Message* push(Message const& msg, uint32_t subscribers){
+        slots[head] = {msg, subscribers};
+    }
+
+    bool try_pop(Message &msg){
+
+    }
+
+
+
+
+private:
+    std::atomic<uint32_t> head = 0;
+    std::atomic<uint32_t> tail = 0;
+    std::array<Slot, 16> slots;
 };
 
 template<typename Message, size_t BufferSize = 1023>
@@ -31,9 +82,12 @@ public:
     Topic(std::string const& name): name_(name){}
 
 
-    void write(Message const& msg) const {
+    void write(Message const& msg) {
+        // Message* m = buffer.push(msg, static_cast<uint32_t>(subscribers.size()));
+
         for(auto sub: subscribers){
-           sub->thread->schedule([sub, msg](){sub->execute(msg);}, Clock::now()); 
+            sub->push(msg);
+            sub->thread->schedule([sub](){sub->execute();}, Clock::now()); 
         }
     }
 
@@ -48,7 +102,7 @@ private:
 
     std::string name_;
     std::vector<SubscriberBase<Message>*> subscribers;
-    std::array<Message, 1024> buffer;
+    // RingBuffer<Message> buffer;
 };
 
 
@@ -57,7 +111,7 @@ class Publisher{
 public:
     using SharedPtr = std::shared_ptr<Publisher<Message>>;
 
-    Publisher(Topic<Message> const* topic) : topic(topic) {}
+    Publisher(Topic<Message> * topic) : topic(topic) {}
 
     void publish(Message const& msg) {
         topic->write(msg);
@@ -70,7 +124,7 @@ public:
 
 private:
 
-    Topic<Message> const* topic;
+    Topic<Message> * topic;
 
 };
 
@@ -90,6 +144,8 @@ template<typename Class, typename Message>
 class Subscriber : public SubscriberBase<Message>{
 public:
 
+    static constexpr uint32_t BUFFER_SIZE = 32;
+
     using SharedPtr = std::shared_ptr<Subscriber<Class, Message>>;
 
     struct Callback {
@@ -106,11 +162,24 @@ public:
         topic->add_subscriber(this);
     }
 
-    void execute(Message const& msg) override {return callback(msg);}
+    void execute() override { 
+        callback(buffer.front()); 
+        buffer.pop_front();
+    }
+
+    void push(Message const& msg) override {
+        if(buffer.size() >= BUFFER_SIZE) {
+            LOG_INFO("Subscriber queue full");
+            buffer.pop_front();
+        }
+
+        buffer.push_back(msg);
+    }
 
 private:
     Topic<Message>* topic;
     Callback callback;
+    std::deque<Message> buffer;
 };
 
 
@@ -131,8 +200,13 @@ public:
     }
 
     void start(){
+        running_ = true;
         worker = std::thread(&Thread::spin, this);
         worker.detach();
+    }
+
+    void stop(){
+        running_ = false;
     }
 
     static void start_all(void){
@@ -144,7 +218,7 @@ public:
 
 private:
     void spin() {
-        while (true) {  
+        while (running_) {  
             if (tasks.empty()) {
                 std::this_thread::sleep_for(1ms);  // Prevent busy-waiting
                 continue;
@@ -174,6 +248,7 @@ private:
 
     std::string name;
     std::thread worker;
+    bool running_ = false;
     std::priority_queue<ScheduledTask> tasks;
 };
 
@@ -220,7 +295,7 @@ public:
 protected:
 
     template<typename Message>
-    typename Publisher<Message>::SharedPtr create_publisher(const Topic<Message>* topic){
+    typename Publisher<Message>::SharedPtr create_publisher(Topic<Message>* topic){
         return std::make_shared<Publisher<Message>>(topic);
     }
 
@@ -255,7 +330,7 @@ public:
 
     void run(){
         publisher->publish("Hello World" + std::to_string(i++));
-        std::cout << "[Node A] I say Hello World on topic" << publisher->topic_name() << std::endl;
+        LOG_INFO("[Node A] I say Hello World on topic", publisher->topic_name());
     }
 
 
@@ -277,7 +352,7 @@ public:
  
 
     void on_msg_receive(std::string const& msg){
-        std::cout << "[Node B] I Heard :" << msg << " on topic "<< hello_world.name() << std::endl;
+        LOG_INFO("[Node A] I heard Hello World on topic", hello_world.name(), msg);
     }
 
 private:
@@ -296,9 +371,11 @@ int main(){
 
     Thread t1("cpu1");
     Thread t2("cpu2");
+    Thread t3("cpu3");
 
     NodeA node_a(&t1);
     NodeB node_b(&t2);
+    NodeB node_c(&t3);
 
     Thread::start_all();
 
