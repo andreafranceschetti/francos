@@ -1,35 +1,32 @@
+
 cmake_minimum_required(VERSION 3.10)
 
 # Set project name and version
-project(MyTests VERSION 1.0 LANGUAGES CXX)
+project(FrancosTests VERSION 1.0 LANGUAGES CXX)
 
 # Specify C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# Add include directory
-include_directories(../include)
+# Find GoogleTest
+find_package(GTest REQUIRED)
 
-# # Enable testing
-# enable_testing()
+# Add test source files
+# file(GLOB TEST_SOURCES "tests/*.cpp")  # Change if your test files are in a subfolder
 
-# # Fetch GoogleTest
-# include(FetchContent)
-# FetchContent_Declare(
-#     googletest
-#     URL https://github.com/google/googletest/archive/refs/tags/v1.12.1.zip
-# )
-# FetchContent_MakeAvailable(googletest)
+# Create test executable
+add_executable(FrancosTest 
+    queue.cpp
+    test.cpp
+)
 
-# # Add test source files
-# file(GLOB TEST_SOURCES "*.cpp")
+# Link GoogleTest and pthread
+target_link_libraries(FrancosTest PRIVATE GTest::GTest GTest::Main pthread francos)
 
-# # Create test executable
-# add_executable(MyTests ${TEST_SOURCES})
+# Include directories if needed
+target_include_directories(FrancosTest PRIVATE ../include)
 
-# # Link GoogleTest
-# target_link_libraries(MyTests PRIVATE gtest gtest_main)
 
-# # Add tests
-# include(GoogleTest)
-# gtest_discover_tests(MyTests)
+# Discover tests
+include(GoogleTest)
+gtest_discover_tests(FrancosTest)
