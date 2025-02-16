@@ -17,7 +17,7 @@ find_package(GTest REQUIRED)
 # Create test executable
 add_executable(FrancosTest 
     queue.cpp
-    test.cpp
+    test_ping_pong.cpp
 )
 
 # Link GoogleTest and pthread

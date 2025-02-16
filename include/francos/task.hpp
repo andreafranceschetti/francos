@@ -3,8 +3,7 @@
 #include <cstdint>
 #include <functional>
 
-#define TASK_FIXED_SIZE 0
-
+#define TASK_FIXED_SIZE 1
 namespace francos {
 
 #if !TASK_FIXED_SIZE
@@ -13,9 +12,12 @@ using Task = std::function<void()>;
 
 #else 
 
-template<std::size_t BufferSize = 64>
+constexpr std::size_t BufferSize = 64;
 class Task {
 public:
+    ~Task();
+    Task(const Task&) = delete;
+    Task& operator=(const Task&) = delete;
 
     template<typename F>
     Task(F&& f) {
@@ -28,34 +30,9 @@ public:
         };
     }
 
-    Task(Task&& other) noexcept {
-        call_ = other.call_;
-        destroy_ = other.destroy_;
-        move_ = other.move_;
+    Task(Task&& other) noexcept;
 
-        // Move the stored callable properly
-        if (other.call_) {
-            move_(&storage, &other.storage);
-            other.destroy_(&other.storage); // Destroy the old object
-            other.call_ = nullptr;
-            other.destroy_ = nullptr;
-            other.move_ = nullptr;
-        }
-    }
-
-    void operator()() {
-        std::cout << "Calling the task" << std::endl;
-        call_(&storage);
-    }
-
-    ~Task() {
-        if (destroy_) {
-            destroy_(&storage);
-        }
-    }
-
-    Task(const Task&) = delete;
-    Task& operator=(const Task&) = delete;
+    void operator()();
 
 private:
     typename std::aligned_storage<BufferSize>::type storage;
@@ -63,7 +40,6 @@ private:
     void (*destroy_)(void*);
     void (*move_)(void*, void*); // Function to move the stored callable
 };
-
 
 #endif
 
