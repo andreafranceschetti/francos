@@ -16,8 +16,9 @@ find_package(GTest REQUIRED)
 
 # Create test executable
 add_executable(FrancosTest 
-    queue.cpp
+    # queue.cpp
     test_ping_pong.cpp
+    test_latency.cpp
 )
 
 # Link GoogleTest and pthread
@@ -25,6 +26,7 @@ target_link_libraries(FrancosTest PRIVATE GTest::GTest GTest::Main pthread franc
 
 # Include directories if needed
 target_include_directories(FrancosTest PRIVATE ../include)
+target_compile_options(FrancosTest PRIVATE -g)
 
 
 # Discover tests

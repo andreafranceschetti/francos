@@ -4,7 +4,6 @@
 
 namespace francos {
 
-
 template<typename Message>
 class Publisher{
 public:

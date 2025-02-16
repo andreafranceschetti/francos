@@ -43,20 +43,7 @@ public:
     Subscriber<int>::SharedPtr subscriber;
 };
 
-// TEST(FrancosTest, TestPingPong){
-//     Thread t("1");
-
-//     NodeA a(&t);
-//     NodeB b(&t);
-
-//     t.schedule([&a](){a.on_msg_received(2);} ,Clock::now());
-
-//     Thread::start_all();
-
-//     std::this_thread::sleep_for(5s);
-    
-// }
-int main(){
+TEST(FrancosTest, TestPingPong){
     Thread t("1");
 
     NodeA a(&t);
@@ -67,7 +54,24 @@ int main(){
     Thread::start_all();
 
     std::this_thread::sleep_for(5s);
+    
+}
+
+#if 0
+int main(){
+    Thread t1("1");
+    Thread t2("1");
+
+    NodeA a(&t1);
+    NodeB b(&t2);
+
+    t1.schedule([&a](){a.on_msg_received(2);} ,Clock::now());
+
+    Thread::start_all();
+
+    std::this_thread::sleep_for(5s);
 
     Thread::stop_all();
     
 }
+#endif

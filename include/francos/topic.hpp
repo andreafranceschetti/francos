@@ -21,7 +21,7 @@ public:
 
     void write(Message const& msg) {
 
-        for(std::shared_ptr<SubscriberBase<Message>> sub: subscribers){
+        for(std::shared_ptr<Subscriber<Message>> sub: subscribers){
 
             if(sub->thread->id() == std::this_thread::get_id()){
                 sub->callback(msg);
@@ -36,14 +36,14 @@ public:
     const std::string& name() const {return name_;}
 
 
-    void add_subscriber(std::shared_ptr<SubscriberBase<Message>> subscriber){
+    void add_subscriber(std::shared_ptr<Subscriber<Message>> subscriber){
         subscribers.push_back(subscriber);
     }
 
 private:
 
     std::string name_;
-    std::vector<std::shared_ptr<SubscriberBase<Message>>> subscribers;
+    std::vector<std::shared_ptr<Subscriber<Message>>> subscribers;
 };
 
 // template<typename T, size_t BufferSize = 1024>

@@ -68,57 +68,57 @@ namespace francos
     }
 
 
-    void Thread::spin()
-    {
-        while (running_)
-        {
-            if (tasks.empty())
-            {
-                std::this_thread::yield(); // Prevent busy-waiting
-                continue;
-            }
-
-            auto now = Clock::now();
-            auto scheduled = tasks.top();
-
-            // Sleep until the scheduled time
-            if (scheduled.time > now)
-            {
-                std::this_thread::sleep_until(scheduled.time);
-            }
-
-            tasks.pop();
-            scheduled.task();
-        }
-    }
-
-
     // void Thread::spin()
     // {
-    //     while (true)
+    //     while (running_)
     //     {
-    //         std::unique_lock<std::mutex> lock(mutex_);
-    //         // Wait until there's a task or the thread is stopped
-    //         cv_.wait(lock, [this]() { return !tasks.empty() || !running_; });
-
-    //         if (!running_)
-    //             break; // Exit if stopped
+    //         if (tasks.empty())
+    //         {
+    //             std::this_thread::yield(); // Prevent busy-waiting
+    //             continue;
+    //         }
 
     //         auto now = Clock::now();
     //         auto scheduled = tasks.top();
 
+    //         // Sleep until the scheduled time
     //         if (scheduled.time > now)
     //         {
-    //             // Wait until the scheduled time or a new task arrives
-    //             cv_.wait_until(lock, scheduled.time);
-    //             continue; // Re-check the queue after waking up
+    //             std::this_thread::sleep_until(scheduled.time);
     //         }
 
     //         tasks.pop();
-    //         lock.unlock();    // Release lock before executing the task
-    //         scheduled.task(); // Execute the task
+    //         scheduled.task();
     //     }
     // }
+
+
+    void Thread::spin()
+    {
+        while (true)
+        {
+            std::unique_lock<std::mutex> lock(mutex_);
+            // Wait until there's a task or the thread is stopped
+            cv_.wait(lock, [this]() { return !tasks.empty() || !running_; });
+
+            if (!running_)
+                break; // Exit if stopped
+
+            auto now = Clock::now();
+            auto scheduled = tasks.top();
+
+            if (scheduled.time > now)
+            {
+                // Wait until the scheduled time or a new task arrives
+                cv_.wait_until(lock, scheduled.time);
+                continue; // Re-check the queue after waking up
+            }
+
+            tasks.pop();
+            lock.unlock();    // Release lock before executing the task
+            scheduled.task(); // Execute the task
+        }
+    }
 
 
 // void Thread::spin() {
