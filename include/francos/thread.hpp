@@ -33,6 +33,7 @@ public:
 
     void schedule(Task const& task, Clock::time_point const& t);
 
+    std::thread::id id();
 private:
     void spin() ;
 

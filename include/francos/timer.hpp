@@ -6,23 +6,25 @@
 
 namespace francos {
 
-template<typename T>
-struct TimedTask {
-    using Function = void(T::*)(void);
-    Function f;
-    T* instance;
+// template<typename T>
+// struct TimedTask {
+//     using Function = void(T::*)(void);
+//     Function f;
+//     T* instance;
 
-    void operator()(){
-        (instance->*f)();
-    }
-};
+//     void operator()(){
+//         (instance->*f)();
+//     }
+// };
 
-template<typename T>
+using TimedTask = std::function<void(void)>;
+
+// template<typename T>
 class Timer {
 public:
     using SharedPtr = std::shared_ptr<Timer>;
 
-    Timer(Thread * thread, TimedTask<T> const& timed_task, std::chrono::milliseconds const& interval) : thread(thread), timed_task(timed_task), interval(interval){}
+    Timer(Thread * thread, TimedTask const& timed_task, std::chrono::milliseconds const& interval) : thread(thread), timed_task(timed_task), interval(interval){}
     
     void start(){
         running_ = true;
@@ -46,7 +48,7 @@ private:
 
     Thread * thread;
     bool running_ = false;
-    TimedTask<T> timed_task;
+    TimedTask timed_task;
     std::chrono::milliseconds interval;
     
 };

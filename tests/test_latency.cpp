@@ -10,7 +10,7 @@ class NodeA : public Node{
 public:
     NodeA(Thread* thread): Node(thread) {
         publisher = this->create_publisher(&number_topic_ab);
-        timer = this->create_timer<NodeA>(thread, {&NodeA::send_time, this}, 500ms);
+        timer = this->create_timer(thread, std::bind(&NodeA::send_time, this), 500ms);
         timer->start();
     }
 
@@ -21,20 +21,20 @@ public:
 private:
 
     Publisher<Clock::time_point>::SharedPtr publisher;
-    Timer<NodeA>::SharedPtr timer;
+    Timer::SharedPtr timer;
 };
 
 class NodeB : public Node{
 public:
     NodeB(Thread* thread): Node(thread) {
-        subscriber = this->create_subscriber<NodeB, Clock::time_point>(thread, &number_topic_ab, {&NodeB::on_msg_received, this});
+        subscriber = this->create_subscriber<Clock::time_point>(thread, &number_topic_ab, std::bind(&NodeB::on_msg_received, this, std::placeholders::_1));
     }
 
     void on_msg_received(Clock::time_point const& time){
         LOG_INFO("Latency: %d us", std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - time).count());
     }
 
-    Subscriber<NodeB, Clock::time_point>::SharedPtr subscriber;
+    Subscriber<Clock::time_point>::SharedPtr subscriber;
 };
 
 // TEST(FrancosTest, TestPingPong){

@@ -63,6 +63,10 @@ namespace francos
         cv_.notify_one(); // Wake up the worker thread
     }
 
+    std::thread::id Thread::id(){
+        return worker.get_id();
+    }
+
 
     void Thread::spin()
     {

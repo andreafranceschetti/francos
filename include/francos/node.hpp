@@ -21,16 +21,15 @@ protected:
         return std::make_shared<Publisher<Message>>(topic);
     }
 
-    template<typename Class, typename Message>
-    typename Subscriber<Class, Message>::SharedPtr create_subscriber(Thread* thread, Topic<Message>* topic, typename Subscriber<Class, Message>::Callback callback){
-        auto sub = std::make_shared<Subscriber<Class, Message>>(thread, topic, callback);
+    template<typename Message>
+    typename Subscriber<Message>::SharedPtr create_subscriber(Thread* thread, Topic<Message>* topic, typename Subscriber<Message>::Callback callback){
+        auto sub = std::make_shared<Subscriber<Message>>(thread, topic, callback);
         topic->add_subscriber(sub);
         return sub;
     }
 
-    template<typename Class>
-    typename Timer<Class>::SharedPtr create_timer(Thread * thread, TimedTask<Class> const& task, std::chrono::milliseconds const& interval){
-        return std::make_shared<Timer<Class>>(thread, task, interval);
+    typename Timer::SharedPtr create_timer(Thread * thread, TimedTask const& task, std::chrono::milliseconds const& interval){
+        return std::make_shared<Timer>(thread, task, interval);
     }
 
 private:

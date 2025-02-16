@@ -20,11 +20,16 @@ public:
 
 
     void write(Message const& msg) {
-        // Message* m = buffer.push(msg, static_cast<uint32_t>(subscribers.size()));
 
         for(std::shared_ptr<SubscriberBase<Message>> sub: subscribers){
-            sub->push(msg);
-            sub->thread->schedule([sub](){sub->execute();}, Clock::now()); 
+
+            if(sub->thread->id() == std::this_thread::get_id()){
+                sub->callback(msg);
+            } else {
+                sub->push(msg);
+                sub->thread->schedule([sub](){sub->execute();}, Clock::now()); 
+            }
+
         }
     }
 

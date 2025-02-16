@@ -11,16 +11,21 @@ class Topic;
 
 template<typename Message>
 class SubscriberBase {
+    friend class Topic<Message>;
 public:
-    SubscriberBase(Thread * thread) : thread(thread){}
+    using Callback = std::function<void(Message const&)>;
+
+    SubscriberBase(Thread * thread, Callback const& callback) : thread(thread), callback(callback){}
     virtual ~SubscriberBase() = default;
     virtual void execute() = 0;
     virtual void push(Message const& msg) = 0;
+protected:
     Thread * thread;
+    Callback callback;
 };
 
 
-template<typename Class, typename Message>
+template<typename Message>
 class Subscriber : public SubscriberBase<Message>{
 
 
@@ -28,24 +33,24 @@ public:
 
     static constexpr uint32_t BUFFER_SIZE = 32;
 
-    using SharedPtr = std::shared_ptr<Subscriber<Class, Message>>;
+    using SharedPtr = std::shared_ptr<Subscriber<Message>>;
 
-    struct Callback {
-        using Function = void(Class::*)(Message const& msg);
-        Function callback;
-        Class* instance;
+    // struct Callback {
+    //     using Function = void(Class::*)(Message const& msg);
+    //     Function callback;
+    //     Class* instance;
     
-        void operator()(Message const& msg){
-            (instance->*callback)(msg);
-        }
-    };
+    //     void operator()(Message const& msg){
+    //         (instance->*callback)(msg);
+    //     }
+    // };
 
-    Subscriber(Thread* thread, Topic<Message>* topic, Callback callback) : SubscriberBase<Message>(thread), topic(topic), callback(callback) {
+    Subscriber(Thread* thread, Topic<Message>* topic, typename SubscriberBase<Message>::Callback const& callback) : SubscriberBase<Message>(thread, callback), topic(topic) {
         // topic->add_subscriber(this);
     }
 
     void execute() override { 
-        callback(buffer.front()); 
+        this->callback(buffer.front()); 
         buffer.pop_front();
     }
 
@@ -61,7 +66,6 @@ public:
 
 private:
     Topic<Message>* topic;
-    Callback callback;
     std::deque<Message> buffer;
     std::mutex queue_mtx;
 };
