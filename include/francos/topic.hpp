@@ -22,7 +22,7 @@ public:
 
     void write(Message const& msg) {
 
-        for(std::shared_ptr<Subscriber<Message>> sub: subscribers){
+        for(std::shared_ptr<Subscriber<Message>> const& sub: subscribers){
 
             if(sub->thread->id() == std::this_thread::get_id()){
                 sub->callback(msg);

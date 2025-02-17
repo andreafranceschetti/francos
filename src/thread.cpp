@@ -1,4 +1,5 @@
 #include <francos/thread.hpp>
+#include <francos/logging.hpp>
 #include <chrono>
 
 using namespace std::chrono_literals;
@@ -34,6 +35,7 @@ namespace francos
     void Thread::stop()
     {
         running_ = false;
+        cv_.notify_one();
     }
 
     void Thread::start_all(void)
@@ -101,8 +103,10 @@ namespace francos
             // Wait until there's a task or the thread is stopped
             cv_.wait(lock, [this]() { return !tasks.empty() || !running_; });
 
-            if (!running_)
+            if (!running_){
+                LOG_WARN("Thread %u died", std::this_thread::get_id());
                 break; // Exit if stopped
+            }
 
             auto now = Clock::now();
             auto scheduled = tasks.top();
