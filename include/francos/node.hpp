@@ -1,6 +1,6 @@
 #pragma once
 
-#include "thread.hpp"
+
 #include "publisher.hpp"
 #include "subscriber.hpp"
 #include "timer.hpp"
@@ -8,6 +8,7 @@
 
 namespace francos {
 
+class Thread;
 
 class Node {
 public:
@@ -28,7 +29,7 @@ protected:
         return sub;
     }
 
-    typename Timer::SharedPtr create_timer(Thread * thread, TimedTask const& task, std::chrono::milliseconds const& interval){
+    typename Timer::SharedPtr create_timer(Thread * thread, Timer::TimerTask const& task, std::chrono::milliseconds const& interval){
         return std::make_shared<Timer>(thread, task, interval);
     }
 

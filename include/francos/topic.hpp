@@ -7,6 +7,7 @@
 #include <thread>
 
 #include "subscriber.hpp"
+#include "clock.hpp"
 
 namespace francos {
 

@@ -1,5 +1,10 @@
 #pragma once
 
+#include <functional>
+#include <memory>
+#include <deque>
+#include <mutex>
+
 #include "logging.hpp"
 
 namespace francos {

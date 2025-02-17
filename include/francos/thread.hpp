@@ -7,11 +7,9 @@
 #include <queue>
 #include <functional>
 #include <vector>
-#include <chrono>
 
 #include "task.hpp"
-
-using Clock = std::chrono::steady_clock;
+#include "clock.hpp"
 
 namespace francos {
 
