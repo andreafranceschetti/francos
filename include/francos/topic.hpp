@@ -22,14 +22,10 @@ public:
 
     void write(Message const& msg) {
 
-        for(std::shared_ptr<Subscriber<Message>> const& sub: subscribers){
+        for(Subscriber<Message>*  sub: subscribers){
 
-            if(sub->thread->id() == std::this_thread::get_id()){
-                sub->callback(msg);
-            } else {
                 sub->push(msg);
                 sub->thread->schedule([sub](){sub->execute();}, Clock::now()); 
-            }
 
         }
     }
@@ -37,14 +33,18 @@ public:
     const std::string& name() const {return name_;}
 
 
-    void add_subscriber(std::shared_ptr<Subscriber<Message>> subscriber){
+    void add_subscriber(Subscriber<Message>* subscriber){
         subscribers.push_back(subscriber);
+    }
+
+    void remove_subscriber(Subscriber<Message>* subscriber){
+        subscribers.erase(std::remove(subscribers.begin(), subscribers.end(), subscriber), subscribers.end());
     }
 
 private:
 
     std::string name_;
-    std::vector<std::shared_ptr<Subscriber<Message>>> subscribers;
+    std::vector<Subscriber<Message>*> subscribers;
 };
 
 // template<typename T, size_t BufferSize = 1024>

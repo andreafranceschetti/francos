@@ -25,7 +25,7 @@ namespace francos
     {
         running_ = true;
         worker = std::thread(&Thread::spin, this);
-        pthread_setname_np(worker.native_handle(), "high_pri_thread");
+        pthread_setname_np(worker.native_handle(), name.c_str());
         sched_param param{.sched_priority = 99}; // Requires root
         pthread_setschedparam(worker.native_handle(), SCHED_FIFO, &param);
 
@@ -52,6 +52,8 @@ namespace francos
         {
             t->stop();
         }
+
+        threads.clear();
     }
     // void schedule(Task const& task, Clock::time_point const& t){
     //     std::lock_guard<std::mutex> lock(thread_mtx);
@@ -69,6 +71,37 @@ namespace francos
         return worker.get_id();
     }
 
+
+
+    void Thread::spin()
+    {
+        while (true)
+        {
+            std::unique_lock<std::mutex> lock(mutex_);
+            // Wait until there's a task or the thread is stopped
+            cv_.wait(lock, [this]() { return !tasks.empty() || !running_; });
+
+            if (!running_){
+                LOG_WARN("Thread %u died\n", std::this_thread::get_id());
+                break; // Exit if stopped
+            }
+
+            if(tasks.empty()) continue;
+
+            auto now = Clock::now();
+            auto scheduled = tasks.top();
+
+            if (scheduled.time > now)
+            {
+                continue; // Re-check the queue after waking up
+            }
+
+            tasks.pop();
+            lock.unlock();    // Release lock before executing the task
+            scheduled.task(); // Execute the task
+        }
+    }
+    
 
     // void Thread::spin()
     // {
@@ -93,36 +126,6 @@ namespace francos
     //         scheduled.task();
     //     }
     // }
-
-
-    void Thread::spin()
-    {
-        while (true)
-        {
-            std::unique_lock<std::mutex> lock(mutex_);
-            // Wait until there's a task or the thread is stopped
-            cv_.wait(lock, [this]() { return !tasks.empty() || !running_; });
-
-            if (!running_){
-                LOG_WARN("Thread %u died", std::this_thread::get_id());
-                break; // Exit if stopped
-            }
-
-            auto now = Clock::now();
-            auto scheduled = tasks.top();
-
-            if (scheduled.time > now)
-            {
-                // Wait until the scheduled time or a new task arrives
-                cv_.wait_until(lock, scheduled.time);
-                continue; // Re-check the queue after waking up
-            }
-
-            tasks.pop();
-            lock.unlock();    // Release lock before executing the task
-            scheduled.task(); // Execute the task
-        }
-    }
 
 
 // void Thread::spin() {

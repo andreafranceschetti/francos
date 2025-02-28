@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <functional>
 
-#define TASK_FIXED_SIZE 1
+#define TASK_FIXED_SIZE 0
 namespace francos {
 
 #if !TASK_FIXED_SIZE

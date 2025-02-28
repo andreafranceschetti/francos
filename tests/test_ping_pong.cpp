@@ -16,7 +16,7 @@ public:
     }
 
     void on_msg_received(int const& data){
-        LOG_INFO("A received %d", data);
+        LOG_INFO("A received %d\n", data);
         publisher->publish(data+1);
     }
 
@@ -53,7 +53,10 @@ TEST(FrancosTest, TestPingPong){
 
     Thread::start_all();
 
-    std::this_thread::sleep_for(5s);
+    std::this_thread::sleep_for(1us);
+
+    Thread::stop_all();
+
     
 }
 

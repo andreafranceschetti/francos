@@ -11,12 +11,12 @@ public:
     NodeA(Thread * thread) : Node(thread) {
 
         publisher = this->create_publisher<std::string>(&hello_world);
-        timer = this->create_timer<NodeA>(thread, {&NodeA::run, this}, 1ms);
+        timer = this->create_timer(thread, std::bind(&NodeA::run, this), 1ms);
         timer->start();
     }
 
     void run(){
-        publisher->publish("Hello World" + std::to_string(i++));
+        publisher->publish("Hello World " + std::to_string(i++));
         LOG_INFO("[Node A] I say Hello World on thread %u", std::this_thread::get_id());
     }
 
@@ -25,7 +25,7 @@ private:
     int i = 0;
 
     Publisher<std::string>::SharedPtr publisher;
-    Timer<NodeA>::SharedPtr timer;
+    Timer::SharedPtr timer;
 
 };
 
@@ -34,7 +34,7 @@ class NodeB : public Node {
 public:
 
     NodeB(Thread * thread) : Node(thread) {
-        subscriber = this->create_subscriber<NodeB, std::string>(thread, &hello_world, {&NodeB::on_msg_receive, this});
+        subscriber = this->create_subscriber<std::string>(thread, &hello_world, std::bind(&NodeB::on_msg_receive, this, std::placeholders::_1));
     }
  
 
@@ -44,22 +44,22 @@ public:
 
 private:
 
-    Subscriber<NodeB, std::string>::SharedPtr subscriber;
+    Subscriber<std::string>::SharedPtr subscriber;
 };
 
 
-// int main(){
+int main(){
 
 
-//     Thread t1("cpu1");
-//     Thread t2("cpu2");
-//     Thread t3("cpu3");
+    Thread t1("cpu1");
+    Thread t2("cpu2");
+    Thread t3("cpu3");
 
-//     NodeA node_a(&t1);
-//     NodeB node_b(&t2);
-//     NodeB node_c(&t3);
+    NodeA node_a(&t1);
+    NodeB node_b(&t2);
+    NodeB node_c(&t3);
 
-//     francos::spin();
+    francos::spin();
 
-//     return 0;
-// }
+    return 0;
+}

@@ -1,12 +1,18 @@
 #include <cstdarg>
 #include <cstdio>
 #include <unistd.h>
+#include <climits>
+#include <mutex>
+#include <iostream>
 
 namespace francos {
 
+std::mutex m;
 
 void log(const char* fmt, ...) {
-    char buffer[256];  // Buffer for formatted message + newline
+    std::lock_guard<std::mutex> lock(m);
+
+    static char buffer[PIPE_BUF-5];  // Buffer for formatted message + newline
 
     va_list args;
     va_start(args, fmt);
@@ -25,8 +31,9 @@ void log(const char* fmt, ...) {
         buffer[len++] = '\n';         // Append newline
     }
 
-    // Atomic single write (POSIX guarantees atomicity for <= PIPE_BUF bytes)
+    // // Atomic single write (POSIX guarantees atomicity for <= PIPE_BUF bytes)
     write(STDOUT_FILENO, buffer, len);
+    // fflush(stdout);
 }
 
 

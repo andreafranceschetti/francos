@@ -17,7 +17,8 @@ target_include_directories(francos PUBLIC include)
 # Enable testing
 enable_testing()
 
-add_subdirectory(tests)
+# add_subdirectory(tests)
+add_subdirectory(benchmarks)
 # Create executable
 # add_executable(MyExecutable ${SOURCES})
 

@@ -12,8 +12,10 @@ class Thread;
 
 class Node {
 public:
-    Node(Thread const* thread) : thread(thread) {};
-    virtual ~Node() = default;
+    Node(Thread const* thread, std::string const& name) : thread(thread), name(name) {};
+    virtual ~Node() {
+        LOG_DEBUG("Node %s died", name.c_str());
+    };
 
 protected:
 
@@ -24,9 +26,7 @@ protected:
 
     template<typename Message>
     typename Subscriber<Message>::SharedPtr create_subscriber(Thread* thread, Topic<Message>* topic, typename Subscriber<Message>::Callback callback){
-        auto sub = std::make_shared<Subscriber<Message>>(thread, topic, callback);
-        topic->add_subscriber(sub);
-        return sub;
+        return std::make_shared<Subscriber<Message>>(thread, topic, callback);
     }
 
     typename Timer::SharedPtr create_timer(Thread * thread, Timer::TimerTask const& task, std::chrono::milliseconds const& interval){
@@ -35,6 +35,7 @@ protected:
 
 private:
     Thread const* thread;
+    std::string name;
 };
 
 
