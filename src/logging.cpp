@@ -5,12 +5,24 @@
 #include <mutex>
 #include <iostream>
 
+#include <francos/logging.hpp>
+
 namespace francos {
 
-std::mutex m;
-
-void log(const char* fmt, ...) {
+static std::mutex m;
+static LogLevel current_log_level = LogLevel::INFO;
+    
+void set_log_level(LogLevel const& level){
     std::lock_guard<std::mutex> lock(m);
+    current_log_level = level;
+}
+
+
+void log(LogLevel const& level, const char* fmt,  ...) {
+
+    if(static_cast<int>(level) < static_cast<int>(current_log_level)){
+        return;
+    }
 
     static char buffer[PIPE_BUF-5];  // Buffer for formatted message + newline
 
