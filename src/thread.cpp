@@ -82,7 +82,7 @@ namespace francos
             cv_.wait(lock, [this]() { return !tasks.empty() || !running_; });
 
             if (!running_){
-                LOG_WARN("Thread %u died\n", std::this_thread::get_id());
+                LOG_DEBUG("Thread %u died\n", std::this_thread::get_id());
                 break; // Exit if stopped
             }
 

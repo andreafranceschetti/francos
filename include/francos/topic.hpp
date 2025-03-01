@@ -23,10 +23,12 @@ public:
     void write(Message const& msg) {
 
         for(Subscriber<Message>*  sub: subscribers){
-
+            if(std::this_thread::get_id() == sub->thread->id()) {  // fast as fuck boi
+                sub->callback(msg);
+            } else { // safe general method
                 sub->push(msg);
                 sub->thread->schedule([sub](){sub->execute();}, Clock::now()); 
-
+            }
         }
     }
 

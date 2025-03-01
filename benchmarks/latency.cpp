@@ -50,7 +50,6 @@ public:
     }
 
     ~NodeB(){
-        LOG_INFO("SIZE: %d", latencies.size());
         double sum = 0;
         for(auto l : latencies){
             sum += l;
@@ -86,9 +85,7 @@ void test_latency_same_thread(){
 }
 
 int main(){
-
     test_latency_betwenn_threads();
-    // std::this_thread::sleep_for(1s);
     test_latency_same_thread();
 
     return 0;

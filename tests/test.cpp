@@ -59,7 +59,7 @@ int main(){
     NodeB node_b(&t2);
     NodeB node_c(&t3);
 
-    francos::spin();
+    spin();
 
     return 0;
 }
