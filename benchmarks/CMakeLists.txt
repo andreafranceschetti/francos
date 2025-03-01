@@ -13,6 +13,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 add_executable(TestLatency latency.cpp)
 target_link_libraries(TestLatency PRIVATE francos)
 target_include_directories(TestLatency PRIVATE ../include)
-target_compile_options(TestLatency PRIVATE -g -O0 -Wall -Wextra)
+target_compile_options(TestLatency PRIVATE -O3 -Wall -Wextra)
 # target_link_options(TestLatency PRIVATE )
 
+
+add_executable(TestThroughput throughput.cpp)
+target_link_libraries(TestThroughput PRIVATE francos)
+target_include_directories(TestThroughput PRIVATE ../include)
+target_compile_options(TestThroughput PRIVATE -g -O0 -fsanitize=address -Wall -Wextra)
+target_link_options(TestThroughput PRIVATE -fsanitize=address)

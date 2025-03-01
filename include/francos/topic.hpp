@@ -36,10 +36,12 @@ public:
 
 
     void add_subscriber(Subscriber<Message>* subscriber){
+        LOG_DEBUG("[topic %s] Adding subscriber %p", name_.c_str(), subscriber);
         subscribers.push_back(subscriber);
     }
 
     void remove_subscriber(Subscriber<Message>* subscriber){
+        LOG_DEBUG("[topic %s] Removing subscriber %p", name_.c_str(), subscriber);
         subscribers.erase(std::remove(subscribers.begin(), subscribers.end(), subscriber), subscribers.end());
     }
 

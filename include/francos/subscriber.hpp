@@ -29,9 +29,11 @@ public:
 
     Subscriber(Thread* thread, Topic<Message>* topic, Callback const& callback) : thread(thread), topic(topic), callback(callback) {
         topic->add_subscriber(this);
+        LOG_DEBUG("Subscriber created at %p", this);
     }
 
     ~Subscriber(){
+        LOG_DEBUG("Subscriber destroyed at %p", this);
         topic->remove_subscriber(this);
     }
 

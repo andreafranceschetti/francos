@@ -10,7 +10,7 @@
 namespace francos {
 
 static std::mutex m;
-static LogLevel current_log_level = LogLevel::INFO;
+static LogLevel current_log_level = LogLevel::DEBUG;
     
 void set_log_level(LogLevel const& level){
     std::lock_guard<std::mutex> lock(m);
@@ -19,6 +19,7 @@ void set_log_level(LogLevel const& level){
 
 
 void log(LogLevel const& level, const char* fmt,  ...) {
+    std::lock_guard<std::mutex> lock(m);
 
     if(static_cast<int>(level) < static_cast<int>(current_log_level)){
         return;

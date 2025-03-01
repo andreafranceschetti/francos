@@ -13,12 +13,12 @@ file(GLOB SOURCES "src/*.cpp")
 
 add_library(francos ${SOURCES})
 target_include_directories(francos PUBLIC include)
-target_compile_definitions(francos PUBLIC DISABLE_LOGGING)
+target_compile_definitions(francos PUBLIC )
 
 # Enable testing
 enable_testing()
 
-# add_subdirectory(tests)
+add_subdirectory(tests)
 add_subdirectory(benchmarks)
 # Create executable
 # add_executable(MyExecutable ${SOURCES})

@@ -27,17 +27,12 @@ namespace francos
 
 #if !defined(DISABLE_LOGGING)
 
-#pragma message("Logging is enabled")
-
-
 #define LOG_INFO(fmt, ...) log(LogLevel::INFO, GREEN "[INFO] " fmt RESET, ##__VA_ARGS__)
 #define LOG_ERROR(fmt, ...) log(LogLevel::ERROR, RED "[ERROR] " fmt RESET, ##__VA_ARGS__)
 #define LOG_WARN(fmt, ...) log(LogLevel::WARN, YELLOW, "[WARN] " fmt RESET, ##__VA_ARGS__)
 #define LOG_DEBUG(fmt, ...) log(LogLevel::DEBUG, "[DEBUG] " fmt RESET, ##__VA_ARGS__)
 
 #else
-
-#pragma message("Logging is disabled")
 
 #define LOG_INFO(fmt, ...)
 #define LOG_ERROR(fmt, ...)

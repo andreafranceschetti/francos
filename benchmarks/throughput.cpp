@@ -4,9 +4,10 @@
 using namespace francos;
 using namespace std::chrono_literals;
 
-Topic<int> number_topic_ab("ab");
-Topic<int> number_topic_ba("ba");
+Topic<int> number_topic_ab("a--->b");
+Topic<int> number_topic_ba("a<---b");
 
+int a = 0;
 
 class NodeA : public Node{
 public:
@@ -16,14 +17,13 @@ public:
     }
 
     void on_msg_received(int const& data){
-        // LOG_INFO("A received %d", data);
-        // printf("A received %d", data);
+        if(a++ > 1e6){
+            LOG_INFO("Reached");
+        }
         publisher->publish(data+1);
     }
 
 private:
-
-
     Publisher<int>::SharedPtr publisher;
     Subscriber<int>::SharedPtr subscriber;
 };
@@ -36,42 +36,50 @@ public:
     }
 
     void on_msg_received(int const& data){
-        // printf("[DEBUG] data: %d\n", data);
-
-        // LOG_INFO("B received %d", data);
-        publisher->publish(data +1);
+        static const int MAX_MESSAGES = 1000;
+        static int count = 0;
+        if (++count > MAX_MESSAGES) {
+            LOG_WARN("Terminating ping-pong loop after %d messages", MAX_MESSAGES);
+            return;
+        }
+        publisher->publish(data+1);
     }
-
+private:
     Publisher<int>::SharedPtr publisher;
     Subscriber<int>::SharedPtr subscriber;
 };
 
-TEST(FrancosTest, TestPingPong){
-    Thread t("1");
 
-    NodeA a(&t);
-    NodeB b(&t);
+
+void test_same_thread(){
+    Thread t1("1");
+
+    NodeA a(&t1);
+    NodeB b(&t1);
 
     number_topic_ab.write(1);
 
-    spin_for(1s);
+    spin_for(10s);
+
 }
 
-#if 0
-int main(){
+
+void test_different_thread(){
     Thread t1("1");
     Thread t2("1");
 
     NodeA a(&t1);
     NodeB b(&t2);
 
-    t1.schedule([&a](){a.on_msg_received(2);} ,Clock::now());
+    number_topic_ab.write(1);
 
-    Thread::start_all();
+    spin_for(1s);
 
-    std::this_thread::sleep_for(5s);
-
-    Thread::stop_all();
-    
 }
-#endif
+
+int main(){
+    // a = 0;
+    // test_different_thread();
+    // a = 0;
+    test_same_thread();
+}

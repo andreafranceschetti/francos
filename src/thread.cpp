@@ -17,8 +17,6 @@ namespace francos
 
     Thread::~Thread()
     {
-        if (worker.joinable())
-            worker.join();
     }
 
     void Thread::start()
@@ -28,14 +26,18 @@ namespace francos
         pthread_setname_np(worker.native_handle(), name.c_str());
         sched_param param{.sched_priority = 99}; // Requires root
         pthread_setschedparam(worker.native_handle(), SCHED_FIFO, &param);
-
-        // worker.detach();
     }
 
     void Thread::stop()
     {
-        running_ = false;
-        cv_.notify_one();
+        {
+            std::unique_lock<std::mutex> lock(mutex_);
+            running_ = false;
+            cv_.notify_one();
+        }
+
+        if (worker.joinable())
+            worker.join();
     }
 
     void Thread::start_all(void)
@@ -48,6 +50,7 @@ namespace francos
 
     void Thread::stop_all(void)
     {
+        LOG_DEBUG("Stopping all threads...");
         for (Thread *t : threads)
         {
             t->stop();
@@ -55,10 +58,7 @@ namespace francos
 
         threads.clear();
     }
-    // void schedule(Task const& task, Clock::time_point const& t){
-    //     std::lock_guard<std::mutex> lock(thread_mtx);
-    //     tasks.push({task, t});
-    // }
+
 
     void Thread::schedule(Task const &task, Clock::time_point const &t)
     {
@@ -82,7 +82,6 @@ namespace francos
             cv_.wait(lock, [this]() { return !tasks.empty() || !running_; });
 
             if (!running_){
-                LOG_DEBUG("Thread %u died\n", std::this_thread::get_id());
                 break; // Exit if stopped
             }
 
@@ -93,6 +92,7 @@ namespace francos
 
             if (scheduled.time > now)
             {
+                std::this_thread::yield();
                 continue; // Re-check the queue after waking up
             }
 
@@ -100,6 +100,7 @@ namespace francos
             lock.unlock();    // Release lock before executing the task
             scheduled.task(); // Execute the task
         }
+        LOG_DEBUG("Thread %u died\n", std::this_thread::get_id());
     }
     
 

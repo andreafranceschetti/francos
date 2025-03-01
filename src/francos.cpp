@@ -9,6 +9,7 @@ static std::atomic<bool> running{true};
 
 static void signal_handler(int) {
     running.store(false);
+    LOG_WARN("Ctrl+C, exiting...");
 }
 
 void spin(){

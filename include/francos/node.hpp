@@ -12,7 +12,7 @@ class Thread;
 
 class Node {
 public:
-    Node(Thread const* thread, std::string const& name) : thread(thread), name(name) {};
+    explicit Node(Thread const* thread, std::string const& name) : thread(thread), name(name) {};
     virtual ~Node() {
         LOG_DEBUG("Node %s died", name.c_str());
     };
@@ -32,6 +32,10 @@ protected:
     typename Timer::SharedPtr create_timer(Thread * thread, Timer::TimerTask const& task, std::chrono::milliseconds const& interval){
         return std::make_shared<Timer>(thread, task, interval);
     }
+
+    // Prevent accidental copying
+    Node(const Node&) = delete;
+    Node& operator=(const Node&) = delete;
 
 private:
     Thread const* thread;
