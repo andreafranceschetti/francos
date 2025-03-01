@@ -44,7 +44,7 @@ namespace francos
         worker = std::thread(&Thread::spin, this);
         pthread_setname_np(worker.native_handle(), name.c_str());
         sched_param param{.sched_priority = 99}; // Requires root
-        pthread_setschedparam(worker.native_handle(), SCHED_FIFO, &param);
+        pthread_setschedparam(worker.native_handle(), SCHED_RR, &param);
         int result = pin_thread_to_core(worker, core_id_);
         if (result != 0) {
             LOG_ERROR("Failed to pin thread %s to core %d", name.c_str(), core_id_ );
@@ -90,10 +90,10 @@ namespace francos
     {
 
 
-
-        std::lock_guard<std::mutex> lock(mutex_);
-        tasks.push({task, t});
-        // cv_.notify_all(); // Wake up the worker thread
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            tasks.push({task, t});
+        }
         futex_flag.store(1, std::memory_order_release); // Set flag before wake-up
         futex_wake();
 
@@ -124,7 +124,7 @@ void Thread::spin(){
             lock.unlock();
             futex_wait();  // Sleep until woken up
             lock.lock();
-            }
+        }
 
         if (!running_ ) {
             break; // Exit if stopped and no tasks are left
@@ -135,7 +135,7 @@ void Thread::spin(){
 
         if (scheduled.time > now) {
             lock.unlock();
-            std::this_thread::sleep_for(std::chrono::microseconds(10));
+            std::this_thread::sleep_for(std::chrono::microseconds(1));
             continue;
         }
 
