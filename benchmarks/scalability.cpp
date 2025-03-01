@@ -3,7 +3,7 @@
 using namespace francos;
 using namespace std::chrono_literals;
 
-constexpr int MAX_LATENCIES = 100000;
+static constexpr int N = 1000;
 
 Topic<Clock::time_point> number_topic_ab("ab");
 
@@ -20,7 +20,7 @@ public:
     void send_time()
     {
         publisher->publish(Clock::now());
-        if (calls++ == MAX_LATENCIES)
+        if (calls++ == N)
         {
             LOG_WARN("Timer stopped");
             timer->stop();
@@ -39,7 +39,7 @@ public:
     NodeB(Thread *thread, std::string const &name) : Node(thread, name)
     {
         subscriber = this->create_subscriber<Clock::time_point>(thread, &number_topic_ab, std::bind(&NodeB::on_msg_received, this, std::placeholders::_1));
-        latencies.reserve(100000);
+        latencies.reserve(N);
     }
 
     void on_msg_received(Clock::time_point const &time)
@@ -54,7 +54,7 @@ public:
         {
             latency = (std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - time).count());
         }
-        // LOG_INFO("%.8f", latency);
+        LOG_INFO("%.8f", latency);
         latencies.push_back(latency);
     }
 
@@ -73,35 +73,28 @@ private:
     Subscriber<Clock::time_point>::SharedPtr subscriber;
 };
 
-void test_latency_between_threads()
+void test_latency_betwenn_many_threads()
 {
-    LOG_INFO("[test latency between 2 threads]");
-    Thread t1("thread_1");
-    Thread t2("thread_2");
-    Thread t3("thread_3");
+    LOG_INFO("[test latency between multiple threads]");
 
-    NodeA a(&t1, "node_a");
-    NodeB b(&t2, "node_b");
-    NodeB c(&t3, "node_c");
+    // sender
+    Thread sender_thread("sender_thread");
+    Thread receiver_thread_1("receiver_thread1");
 
-    spin_for(1s);
-}
+    NodeA sender(&sender_thread, "sender");
+    NodeB receiver_1(&receiver_thread_1, "receiver1");
+    // Thread receiver_thread_2("receiver_thread2");
+    // NodeB receiver_2(&receiver_thread_2, "receiver2");
 
-void test_latency_same_thread()
-{
-    LOG_INFO("[test latency same thread]");
-    Thread t1("single_thread");
-
-    NodeA a(&t1, "node_a");
-    NodeB b(&t1, "node_b");
+    // Thread receiver_thread_3("receiver_thread3");
+    // NodeB receiver_3(&receiver_thread_3, "receiver3");
 
     spin_for(1s);
 }
 
 int main()
 {
-    test_latency_between_threads();
-    // test_latency_same_thread();
 
+    test_latency_betwenn_many_threads();
     return 0;
 }

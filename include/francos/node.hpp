@@ -34,8 +34,8 @@ protected:
     }
 
     // Prevent accidental copying
-    Node(const Node&) = delete;
-    Node& operator=(const Node&) = delete;
+    // Node(const Node&) = delete;
+    // Node& operator=(const Node&) = delete;
 
 private:
     Thread const* thread;

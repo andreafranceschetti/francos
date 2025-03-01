@@ -2,14 +2,33 @@
 #include <francos/logging.hpp>
 #include <chrono>
 
+#include <linux/futex.h>
+#include <sys/time.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+#include <atomic>
+
+
+
+
 using namespace std::chrono_literals;
+
+#define USE_FUTEX
 
 namespace francos
 {
 
     static std::vector<Thread *> threads;
 
-    Thread::Thread(std::string const &name) : name(name)
+    static int pin_thread_to_core(std::thread &t, int core_id) {
+        cpu_set_t cpuset;
+        CPU_ZERO(&cpuset);             
+        CPU_SET(core_id, &cpuset);     
+
+        return pthread_setaffinity_np(t.native_handle(), sizeof(cpu_set_t), &cpuset);
+    }
+
+    Thread::Thread(std::string const &name, int core) : name(name), core_id_(core)
     {
 
         threads.push_back(this);
@@ -26,6 +45,12 @@ namespace francos
         pthread_setname_np(worker.native_handle(), name.c_str());
         sched_param param{.sched_priority = 99}; // Requires root
         pthread_setschedparam(worker.native_handle(), SCHED_FIFO, &param);
+        int result = pin_thread_to_core(worker, core_id_);
+        if (result != 0) {
+            LOG_ERROR("Failed to pin thread %s to core %d", name.c_str(), core_id_ );
+        } else {
+            LOG_INFO("Thread %s pinned to core %d", name.c_str(), core_id_);
+        }
     }
 
     void Thread::stop()
@@ -33,7 +58,7 @@ namespace francos
         {
             std::unique_lock<std::mutex> lock(mutex_);
             running_ = false;
-            cv_.notify_one();
+            futex_wake();
         }
 
         if (worker.joinable())
@@ -46,6 +71,7 @@ namespace francos
         {
             t->start();
         }
+
     }
 
     void Thread::stop_all(void)
@@ -62,16 +88,64 @@ namespace francos
 
     void Thread::schedule(Task const &task, Clock::time_point const &t)
     {
+
+
+
         std::lock_guard<std::mutex> lock(mutex_);
         tasks.push({task, t});
-        cv_.notify_one(); // Wake up the worker thread
+        // cv_.notify_all(); // Wake up the worker thread
+        futex_flag.store(1, std::memory_order_release); // Set flag before wake-up
+        futex_wake();
+
     }
 
     std::thread::id Thread::id(){
         return worker.get_id();
     }
 
+#if defined(USE_FUTEX)
 
+void Thread::futex_wake() {
+    syscall(SYS_futex, &futex_flag, FUTEX_WAKE_PRIVATE, 1, nullptr, nullptr, 0);
+}
+
+void Thread::futex_wait() {
+    int expected = 0;
+    syscall(SYS_futex, &futex_flag, FUTEX_WAIT_PRIVATE, expected, nullptr, nullptr, 0);
+}
+
+void Thread::spin(){
+
+    while (true) {
+        std::unique_lock<std::mutex> lock(mutex_);
+
+        while (tasks.empty() && running_) {
+            futex_flag.store(0, std::memory_order_relaxed); // Reset before sleep
+            lock.unlock();
+            futex_wait();  // Sleep until woken up
+            lock.lock();
+            }
+
+        if (!running_ ) {
+            break; // Exit if stopped and no tasks are left
+        }
+
+        auto now = Clock::now();
+        auto scheduled = tasks.top();
+
+        if (scheduled.time > now) {
+            lock.unlock();
+            std::this_thread::sleep_for(std::chrono::microseconds(10));
+            continue;
+        }
+
+        tasks.pop();
+        lock.unlock(); // Release lock before executing the task
+        scheduled.task();
+    }
+}
+
+#else 
 
     void Thread::spin()
     {
@@ -85,15 +159,15 @@ namespace francos
                 break; // Exit if stopped
             }
 
-            if(tasks.empty()) continue;
-
             auto now = Clock::now();
             auto scheduled = tasks.top();
 
             if (scheduled.time > now)
             {
-                std::this_thread::yield();
-                continue; // Re-check the queue after waking up
+                // Wait until the next task is ready or a new task arrives
+                cv_.wait_until(lock, scheduled.time, [this, now] {
+                    return !tasks.empty() && tasks.top().time <= Clock::now() || !running_;
+                });
             }
 
             tasks.pop();
@@ -102,7 +176,7 @@ namespace francos
         }
         LOG_DEBUG("Thread %u died\n", std::this_thread::get_id());
     }
-    
+#endif
 
     // void Thread::spin()
     // {

@@ -18,11 +18,15 @@ public:
 
     bool push(const T& item) {
         std::size_t current_tail = tail_.load(std::memory_order_relaxed);
-        std::size_t next_tail = (current_tail + 1) % Size;
+        std::size_t current_head = head_.load(std::memory_order_relaxed);
+        std::size_t next_tail = next(current_tail);
 
-        if(!override_last_msg_){
-            if (next_tail == head_.load(std::memory_order_acquire)) { // Queue is full
-                return false;
+        if (next_tail == current_head) { // Queue is full
+            if(override_last_msg_){ 
+                // advance head too
+                head_.store(next(current_head), std::memory_order_release);
+            } else{
+                return false; 
             }
         }
 
@@ -33,13 +37,14 @@ public:
 
     bool pop(T& item) {
         std::size_t current_head = head_.load(std::memory_order_relaxed);
+        std::size_t current_tail = tail_.load(std::memory_order_relaxed);
 
-        if (current_head == tail_.load(std::memory_order_acquire)) { // Queue is empty
+        if (current_head == current_tail) { // Queue is empty
             return false;
         }
 
         item = buffer_[current_head];
-        head_.store((current_head + 1) % Size, std::memory_order_release);
+        head_.store(next(current_head), std::memory_order_release);
         return true;
     }
 
@@ -48,6 +53,8 @@ public:
     }
 
 private:
+
+    std::size_t next(std::size_t const& n){ return (n+1) %Size;}
 
     std::atomic_uint32_t head_ = 0;
     std::atomic_uint32_t tail_ = 0;

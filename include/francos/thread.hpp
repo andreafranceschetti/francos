@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 
 #include <thread>
 #include <mutex>
@@ -18,7 +19,7 @@ class Thread {
 public:
     using Task = std::function<void()>;
 
-    Thread(std::string const& name);
+    Thread(std::string const& name, int core = 0);
     virtual ~Thread();
 
     void start();
@@ -49,7 +50,14 @@ private:
     std::mutex mutex_;
     std::condition_variable cv_;
     bool running_ = false;
+    int core_id_ = 0;
     std::priority_queue<ScheduledTask> tasks;
+
+
+    std::atomic<int> futex_flag{0};  // Replaces condition variable
+
+    void futex_wake();
+    void futex_wait();
 };
 
 // class Thread {

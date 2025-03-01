@@ -2,8 +2,10 @@
 
 #include <functional>
 #include <memory>
-#include <deque>
 #include <mutex>
+
+// #include <deque>
+#include "queue.hpp"
 
 #include "logging.hpp"
 
@@ -37,30 +39,28 @@ public:
         topic->remove_subscriber(this);
     }
 
-    void execute() { 
-        if(buffer.empty()){
+    void execute() {
+        Message msg;
+        if(!buffer.pop(msg)){
             LOG_WARN("Queue empty!");
             return;
         }
-        this->callback(buffer.front()); 
-        buffer.pop_front();
+        this->callback(msg); 
     }
 
     void push(Message const& msg) {
-        std::lock_guard<std::mutex> lock(queue_mtx);
-        if(buffer.size() >= BUFFER_SIZE) {
-            LOG_INFO("Subscriber queue full");
-            buffer.pop_front();
-        }
 
-        buffer.push_back(msg);
+        if(!buffer.push(msg)){
+            LOG_WARN("Subscriber queue full");
+            return;
+        }
     }
 
 private:
     Thread * thread;
     Topic<Message>* topic;
     Callback callback;
-    std::deque<Message> buffer;
+    Queue<Message> buffer;
     std::mutex queue_mtx;
 };
 
