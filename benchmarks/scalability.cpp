@@ -3,7 +3,7 @@
 using namespace francos;
 using namespace std::chrono_literals;
 
-static constexpr int N = 1000;
+static constexpr int N = 10000;
 
 Topic<Clock::time_point> number_topic_ab("ab");
 
@@ -13,18 +13,20 @@ public:
     NodeA(Thread *thread, std::string const &name) : Node(thread, name)
     {
         publisher = this->create_publisher(&number_topic_ab);
-        timer = this->create_timer(thread, std::bind(&NodeA::send_time, this), 10ms);
+        timer = this->create_timer(thread, std::bind(&NodeA::send_time, this), 1ms);
         timer->start();
     }
 
     void send_time()
     {
-        publisher->publish(Clock::now());
-        if (calls++ == N)
+        if (++calls == N)
         {
             LOG_WARN("Timer stopped");
             timer->stop();
+            return;
         }
+
+        publisher->publish(Clock::now());
     }
 
 private:
@@ -54,7 +56,6 @@ public:
         {
             latency = (std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - time).count());
         }
-        LOG_INFO("%.8f", latency);
         latencies.push_back(latency);
     }
 
@@ -65,7 +66,7 @@ public:
         {
             sum += l;
         }
-        LOG_INFO("Average latency: %.8f microseconds", sum / static_cast<double>(latencies.size()));
+        LOG_INFO("Average latency: %.8f microseconds (%d samples)", sum / static_cast<double>(latencies.size()), latencies.size());
     }
 
 private:
@@ -78,18 +79,19 @@ void test_latency_betwenn_many_threads()
     LOG_INFO("[test latency between multiple threads]");
 
     // sender
-    Thread sender_thread("sender_thread");
-    Thread receiver_thread_1("receiver_thread1");
-
+    Thread sender_thread("sender_thread", 1);
     NodeA sender(&sender_thread, "sender");
+
+    Thread receiver_thread_1("receiver_thread1", 1);
     NodeB receiver_1(&receiver_thread_1, "receiver1");
-    // Thread receiver_thread_2("receiver_thread2");
-    // NodeB receiver_2(&receiver_thread_2, "receiver2");
+    Thread receiver_thread_2("receiver_thread2", 1);
+    NodeB receiver_2(&receiver_thread_2, "receiver2");
+    Thread receiver_thread_3("receiver_thread3", 1);
+    NodeB receiver_3(&receiver_thread_3, "receiver3");
+    Thread receiver_thread_4("receiver_thread4", 1);
+    NodeB receiver_4(&receiver_thread_4, "receiver4");
 
-    // Thread receiver_thread_3("receiver_thread3");
-    // NodeB receiver_3(&receiver_thread_3, "receiver3");
-
-    spin_for(1s);
+    spin_for(11s);
 }
 
 int main()

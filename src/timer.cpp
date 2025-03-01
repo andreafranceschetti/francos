@@ -20,12 +20,12 @@ namespace francos
 
     void Timer::tick()
     {
-        timed_task();
         if (running_)
         {
             auto t = Clock::now() + interval;
             thread->schedule([this]()
                              { this->tick(); }, t);
         }
+        timed_task();
     }
 }

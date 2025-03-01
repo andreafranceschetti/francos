@@ -13,7 +13,7 @@ public:
     NodeA(Thread *thread, std::string const &name) : Node(thread, name)
     {
         publisher = this->create_publisher(&number_topic_ab);
-        timer = this->create_timer(thread, std::bind(&NodeA::send_time, this), 10ms);
+        timer = this->create_timer(thread, std::bind(&NodeA::send_time, this), 5ms);
         timer->start();
     }
 
