@@ -47,8 +47,8 @@ namespace francos
         stop_logging_flag.store(true);
         if(logging_thread.joinable()){
             logging_thread.join();
+            std::cerr << "Logging thread stopped" << std::endl;
         }
-        std::cerr << "Logging thread stopped" << std::endl;
     }
 
     Thread::Thread(std::string const &name, int core) : name(name), core_id_(core)

@@ -13,9 +13,9 @@ extern void stop_logging(void);
 
 
 static void signal_handler(int) {
+    std::cerr << "Ctrl+C, exiting..." << std::endl;
     running.store(false);
     stop_logging();
-    std::cerr << "Ctrl+C, exiting..." << std::endl;
 }
 
 void init(void){
