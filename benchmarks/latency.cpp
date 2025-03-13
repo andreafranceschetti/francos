@@ -100,8 +100,12 @@ void test_latency_same_thread()
 
 int main()
 {
+    init();
+
     test_latency_between_threads();
     // test_latency_same_thread();
+
+    shutdown();
 
     return 0;
 }

@@ -52,6 +52,12 @@ public:
         return head_.load(std::memory_order_relaxed) == tail_.load(std::memory_order_relaxed);
     }
 
+    size_t size() const {
+        std::size_t current_head = head_.load(std::memory_order_relaxed);
+        std::size_t current_tail = tail_.load(std::memory_order_relaxed);
+        return (current_tail - current_head + buffer_.size()) % buffer_.size();
+    }
+
 private:
 
     std::size_t next(std::size_t const& n){ return (n+1) %Size;}

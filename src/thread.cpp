@@ -7,6 +7,7 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 #include <atomic>
+#include <iostream>
 
 
 
@@ -19,6 +20,12 @@ namespace francos
 {
 
     static std::vector<Thread *> threads;
+    
+    // logging stuff
+    std::thread logging_thread;
+    extern void flush_logging_queue(void);
+    extern std::atomic<bool> stop_logging_flag;
+    //    
 
     static int pin_thread_to_core(std::thread &t, int core_id) {
         cpu_set_t cpuset;
@@ -26,6 +33,22 @@ namespace francos
         CPU_SET(core_id, &cpuset);     
 
         return pthread_setaffinity_np(t.native_handle(), sizeof(cpu_set_t), &cpuset);
+    }
+    
+    void start_logging(void){
+        logging_thread = std::thread(flush_logging_queue);
+        pthread_setname_np(logging_thread.native_handle(), "logging");
+        sched_param param{.sched_priority = 50}; // low priority
+        pthread_setschedparam(logging_thread.native_handle(), SCHED_RR, &param);
+        int result = pin_thread_to_core(logging_thread, 0);
+    }
+
+    void stop_logging(void){
+        stop_logging_flag.store(true);
+        if(logging_thread.joinable()){
+            logging_thread.join();
+        }
+        std::cerr << "Logging thread stopped" << std::endl;
     }
 
     Thread::Thread(std::string const &name, int core) : name(name), core_id_(core)
