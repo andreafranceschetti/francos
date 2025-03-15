@@ -58,7 +58,7 @@ void flush_logging_queue() {
     static std::string out(PIPE_BUF * LOG_QUEUE_SIZE, '\0');
     size_t out_size = 0;  
 
-    while (!stop_logging_flag) {
+    while (!stop_logging_flag || !logging_queue.is_empty()) {
         while (!logging_queue.is_empty()) {
             std::string msg;
             if (!logging_queue.pop(msg)) break;

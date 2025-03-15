@@ -5,6 +5,7 @@
 #include <atomic>
 #include <semaphore>
 #include <thread>
+#include <string>
 
 #include "subscriber.hpp"
 #include "clock.hpp"
