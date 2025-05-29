@@ -25,7 +25,7 @@ target_link_libraries(FrancosTest PRIVATE GTest::GTest GTest::Main pthread franc
 
 # Include directories if needed
 target_include_directories(FrancosTest PRIVATE ../include)
-target_compile_options(FrancosTest PRIVATE -g -Wall -Wextra)
+target_compile_options(FrancosTest PRIVATE -g -O0 -Wall -Wextra)
 
 
 # Discover tests

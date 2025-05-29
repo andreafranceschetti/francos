@@ -85,6 +85,7 @@ void test_latency_between_threads()
     NodeB c(&t3, "node_c");
 
     spin_for(1s);
+    // spin();
 }
 
 void test_latency_same_thread()
