@@ -1,5 +1,6 @@
 #include <francos/francos.hpp>
 #include <csignal>
+#include <iostream>
 
 using namespace std::chrono_literals;
 
@@ -7,10 +8,20 @@ namespace francos {
 
 static std::atomic<bool> running{true};
 
+extern void start_logging(void);
+extern void stop_logging(void);
+
+
 static void signal_handler(int) {
     running.store(false);
-    LOG_WARN("Ctrl+C, exiting...");
+    stop_logging();
+    std::cerr << "Ctrl+C, exiting..." << std::endl;
 }
+
+void init(void){
+    start_logging();
+}
+
 
 void spin(){
     std::signal(SIGINT, signal_handler);
@@ -35,6 +46,10 @@ void spin_for(std::chrono::seconds const& duration){
     }
 
     Thread::stop_all();
+}
+
+void shutdown(void){
+    stop_logging();
 }
 
 }

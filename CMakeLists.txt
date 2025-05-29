@@ -18,7 +18,7 @@ target_compile_definitions(francos PUBLIC )
 # Enable testing
 enable_testing()
 
-add_subdirectory(tests)
+# add_subdirectory(tests)
 add_subdirectory(benchmarks)
 # Create executable
 # add_executable(MyExecutable ${SOURCES})

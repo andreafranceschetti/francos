@@ -4,11 +4,17 @@
 #include <climits>
 #include <mutex>
 #include <iostream>
+#include <thread>
 
 #include <francos/logging.hpp>
+#include <francos/queue.hpp>
+
 
 namespace francos {
 
+static constexpr size_t LOG_QUEUE_SIZE = 1024;
+
+static Queue<std::string, LOG_QUEUE_SIZE> logging_queue;
 static std::mutex m;
 static LogLevel current_log_level = LogLevel::DEBUG;
     
@@ -19,7 +25,6 @@ void set_log_level(LogLevel const& level){
 
 
 void log(LogLevel const& level, const char* fmt,  ...) {
-    std::lock_guard<std::mutex> lock(m);
 
     if(static_cast<int>(level) < static_cast<int>(current_log_level)){
         return;
@@ -44,9 +49,37 @@ void log(LogLevel const& level, const char* fmt,  ...) {
         buffer[len++] = '\n';         // Append newline
     }
 
-    // // Atomic single write (POSIX guarantees atomicity for <= PIPE_BUF bytes)
-    write(STDOUT_FILENO, buffer, len);
-    // fflush(stdout);
+    logging_queue.push(std::string(buffer, len));
+}
+
+
+std::atomic<bool> stop_logging_flag{false};
+void flush_logging_queue() {
+    static std::string out(PIPE_BUF * LOG_QUEUE_SIZE, '\0');
+    size_t out_size = 0;  
+
+    while (!stop_logging_flag) {
+        while (!logging_queue.is_empty()) {
+            std::string msg;
+            if (!logging_queue.pop(msg)) break;
+
+            if (out_size + msg.size() <= out.size()) {
+                std::copy(msg.begin(), msg.end(), out.begin() + out_size);
+                out_size += msg.size();
+            } else {
+                write(STDOUT_FILENO, out.c_str(), out_size);
+                out_size = 0;
+            }
+        }
+
+        if (out_size > 0) {
+            write(STDOUT_FILENO, out.c_str(), out_size);
+            out_size = 0;  // Reset buffer position
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
 }
 
 
