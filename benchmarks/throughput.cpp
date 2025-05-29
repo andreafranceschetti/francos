@@ -1,5 +1,4 @@
 #include <francos/francos.hpp>
-#include <gtest/gtest.h>
 
 using namespace francos;
 using namespace std::chrono_literals;
@@ -78,8 +77,12 @@ void test_different_thread(){
 }
 
 int main(){
+
+    init();
     // a = 0;
     // test_different_thread();
     // a = 0;
     test_same_thread();
+
+    shutdown();
 }
